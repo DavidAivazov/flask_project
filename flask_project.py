@@ -1,16 +1,20 @@
-from logging import Manager
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
 from cloudipsp import Api, Checkout
+from flask_wtf import FlaskForm
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
+from wtforms import StringField, SubmitField, TextAreaField, BooleanField, PasswordField
+from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'fasdfasdo;fadfasdofjasidfuhasdfiou'
 db = SQLAlchemy(app)
-manager = Manager(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -20,7 +24,12 @@ class Item(db.Model):
     text = db.Column(db.Text(), nullable=False)
 
 
-class User(db.Model):
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.query(User).get(user_id)
+
+
+class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(100))
@@ -37,16 +46,64 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def load_user(user_id):
+        return db.session.query(User).get(user_id)
+
+
+class LoginForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    remember = BooleanField("Remember Me")
+    submit = SubmitField()
+
+
+@app.route('/login/', methods=['post', 'get'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('admin'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = db.session.query(User).filter(User.username == form.username.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember.data)
+            return redirect(url_for('admin'))
+
+        flash("Invalid username/password", 'error')
+        return redirect(url_for('login'))
+    return render_template('login.html', form=form)
+
+
+@app.route('/logout/')
+@login_required
+def logout():
+    logout_user()
+    flash("You have been logged out.")
+    return redirect(url_for('login'))
+
+
+#########################
+#
+# @app.route('/login/', methods=['post', 'get'])
+# def login():
+#     message = ''
+#     if request.method == 'POST':
+#         print(request.form)
+#         username = request.form.get('username')
+#         password = request.form.get('password')
+#
+#         if username == 'root' and password == 'pass':
+#             message = "Correct username and password"
+#         else:
+#             message = "Wrong username or password"
+#
+#     return render_template('login.html', message=message)
+
+############################
 
 @app.route('/')
 def index():
     item = Item.query.all()
     return render_template('index.html', items=item)
-
-
-@app.route('/login')
-def login():
-    return render_template('login.html')
 
 
 @app.route('/registration')
@@ -78,6 +135,7 @@ def buy_item(id):
 
 
 @app.route('/create', methods=['POST', 'GET'])
+@login_required
 def create():
     if request.method == 'POST':
         title = request.form['title']
@@ -100,9 +158,13 @@ def create():
         return render_template('create.html')
 
 
-@app.route('/admin')
+
+
+
+@app.route('/admin/')
+@login_required
 def admin():
-    return 'test'
+    return render_template('create.html')
 
 
 if __name__ == '__main__':
