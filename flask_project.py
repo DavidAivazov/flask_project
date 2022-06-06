@@ -1,3 +1,6 @@
+import json
+import capitalize as capitalize
+import requests
 from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
 from cloudipsp import Api, Checkout
@@ -81,29 +84,30 @@ def logout():
     return redirect(url_for('login'))
 
 
-#########################
-#
-# @app.route('/login/', methods=['post', 'get'])
-# def login():
-#     message = ''
-#     if request.method == 'POST':
-#         print(request.form)
-#         username = request.form.get('username')
-#         password = request.form.get('password')
-#
-#         if username == 'root' and password == 'pass':
-#             message = "Correct username and password"
-#         else:
-#             message = "Wrong username or password"
-#
-#     return render_template('login.html', message=message)
-
-############################
 
 @app.route('/')
 def index():
+    api_key = '3d54eaad2124ca78ec826c93f2337aa6'
+    url = f'http://api.openweathermap.org/data/2.5/weather?q=Tbilisi&appid={api_key}&units=metric'
+    r = requests.get(url)
+    result_json = r.text
+    res = json.loads(result_json)
+    city_name = res['name']
+    country_code = res['sys']['country']
+    coord_lon = res['coord']['lon']
+    coord_lat = res['coord']['lat']
+    city_weather = (res['weather'][0]['main'])
+    city_sky = (res['weather'][0]['description'])
+    temp = res['main']['temp']
+    temp_feel = res['main']['feels_like']
+    pressure = res['main']['pressure']
+    humidity = res['main']['humidity']
+    wind_speed = res['wind']['speed']
+    wind_dirrection = res['wind']['deg']
     item = Item.query.all()
-    return render_template('index.html', items=item)
+    return render_template('index.html', items=item, city_name=city_name,country_code=country_code,coord_lon=coord_lon,
+                           coord_lat=coord_lat,city_weather=city_weather,city_sky=city_sky,temp=temp,temp_feel=temp_feel,
+                           pressure=pressure,humidity=humidity,wind_speed=wind_speed,wind_dirrection=wind_dirrection)
 
 
 @app.route('/registration')
@@ -156,9 +160,6 @@ def create():
 
     else:
         return render_template('create.html')
-
-
-
 
 
 @app.route('/admin/')

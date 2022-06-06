@@ -25,5 +25,18 @@
     {% endfor %}
 </div>
 
-
+   <div>
+                        <p> ქალაქი: {{city_name}} [{{country_code}}] | კოორდინატები: {{coord_lon}} X {{coord_lat}} |
+                            ამინდი: {{city_weather}}
+                        </p>
+                        <p>
+                            ღრუბლოვანობა: {{city_sky}} | ტემპერატურა: {{temp}} °C (იგრძნება როგორც {{temp_feel}} °C) |
+                            წნევა: {{pressure}} bar
+                        </p>
+                        <p>
+                            ტენიანობა: {{humidity}} % | ქარის სიჩქარე: {{wind_speed}} მ/წ | ქარის მიმართულება:
+                            {{wind_dirrection}} °
+                        </p>
+                    </div>
 {% endblock %}
+
