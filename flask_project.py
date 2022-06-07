@@ -1,5 +1,4 @@
 import json
-import capitalize as capitalize
 import requests
 from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
@@ -96,13 +95,6 @@ def register():
         return redirect(url_for('login'))
     print(2)
     return render_template('registration.html', form=form_r)
-#
-# @app.route('/registration', methods=['post', 'get'])
-# def registration():
-#     if current_user.is_authenticated:
-#         return redirect(url_for('admin'))
-#     form_r = RegistrationForm()
-#     return render_template('registration.html', form=form_r)
 
 
 @app.route('/logout/')
