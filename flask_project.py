@@ -8,7 +8,7 @@ from flask_wtf import FlaskForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, TextAreaField, BooleanField, PasswordField
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, EqualTo
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
@@ -34,7 +34,7 @@ def load_user(user_id):
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
-    id = db.Column(db.Integer(), primary_key=True)
+    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     name = db.Column(db.String(100))
     username = db.Column(db.String(50), nullable=False, unique=True)
     email = db.Column(db.String(100), nullable=False, unique=True)
@@ -57,8 +57,14 @@ class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember Me")
-    submit = SubmitField()
+    submit = SubmitField('Login')
 
+class RegistrationForm(FlaskForm):
+    username = StringField('username', validators =[DataRequired()])
+    email = StringField('email', validators=[DataRequired()])
+    password1 = PasswordField('Password', validators = [DataRequired()])
+    password2 = PasswordField('Confirm Password', validators = [DataRequired(),EqualTo('password1')])
+    submit = SubmitField('Registration')
 
 @app.route('/login/', methods=['post', 'get'])
 def login():
@@ -74,6 +80,29 @@ def login():
         flash("Invalid username/password", 'error')
         return redirect(url_for('login'))
     return render_template('login.html', form=form)
+
+@app.route('/registration', methods = ['post','get'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('admin'))
+    form_r = RegistrationForm()
+    print(0)
+    if form_r.validate_on_submit():
+        print(1)
+        user = User(username=form_r.username.data, email=form_r.email.data)
+        user.set_password(form_r.password1.data)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    print(2)
+    return render_template('registration.html', form=form_r)
+#
+# @app.route('/registration', methods=['post', 'get'])
+# def registration():
+#     if current_user.is_authenticated:
+#         return redirect(url_for('admin'))
+#     form_r = RegistrationForm()
+#     return render_template('registration.html', form=form_r)
 
 
 @app.route('/logout/')
@@ -109,10 +138,6 @@ def index():
                            coord_lat=coord_lat,city_weather=city_weather,city_sky=city_sky,temp=temp,temp_feel=temp_feel,
                            pressure=pressure,humidity=humidity,wind_speed=wind_speed,wind_dirrection=wind_dirrection)
 
-
-@app.route('/registration')
-def registration():
-    return render_template('registration.html')
 
 
 @app.route('/about')
